@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(160deg, #0a0a0f 0%, #12121a 50%, #0f0f14 100%);
+            color: #e8e8ec;
+            padding: 2rem 1.5rem;
+        }
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle { margin-top: 0.5rem; color: #71717a; font-size: 0.95rem; }
+        .container {
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        .signed-in {
+            margin-top: 1.25rem;
+            padding: 0.85rem 1.25rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(165, 180, 252, 0.25);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: #a5b4fc;
+        }
+        .signed-in span { color: #f4f4f5; font-weight: 600; }
+        .signed-in.hidden { display: none; }
+        .balance {
+            margin-top: 0.75rem;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #f4f4f5;
+        }
+        .balance-label {
+            display: block;
+            margin-top: 0.35rem;
+            font-size: 0.8rem;
+            font-weight: 400;
+            color: #71717a;
+            font-style: italic;
+        }
+        #sign-in-btn {
+            margin-top: 1.5rem;
+            padding: 0.85rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: #fff;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.35);
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+        #sign-in-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(99, 102, 241, 0.45);
+        }
+        #sign-in-menu {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 20;
+            padding: 1.5rem;
+        }
+        #sign-in-menu.open { display: flex; }
+        .menu-panel {
+            width: 100%;
+            max-width: 360px;
+            background: linear-gradient(160deg, #12121a 0%, #0f0f14 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+        .menu-panel h2 {
+            font-size: 1.25rem;
+            margin-bottom: 0.35rem;
+            color: #f4f4f5;
+        }
+        .menu-panel p {
+            color: #71717a;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+        .user-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            list-style: none;
+        }
+        .user-list button {
+            width: 100%;
+            text-align: left;
+            padding: 0.85rem 1.15rem;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: #f4f4f5;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .user-list button:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(165, 180, 252, 0.35);
+        }
+        .menu-close {
+            margin-top: 1rem;
+            width: 100%;
+            padding: 0.65rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: #71717a;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        .menu-close:hover { color: #e8e8ec; border-color: rgba(255, 255, 255, 0.18); }
+        #start-overlay {
+            position: fixed; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            cursor: pointer; z-index: 10;
+        }
+        #start-overlay.hidden { display: none; }
+        #start-overlay p {
+            font-size: 1.1rem; color: #f4f4f5;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+        #status { margin-top: 1rem; color: #ef4444; font-size: 0.85rem; min-height: 1.2em; }
+    </style>
+</head>
+<body>
+    <a href="https://adfhjftfght.github.io/theskyduelshub/" style="position:fixed;top:1rem;left:1rem;z-index:30;display:inline-block;padding:0.8rem 1rem;border-radius:999px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;text-decoration:none;font-weight:800;box-shadow:0 8px 24px rgba(99,102,241,0.35);border:2px solid rgba(255,255,255,0.25);">← Back</a>
+    <div id="start-overlay"><p>Click to enter the shop</p></div>
+
+    <div id="sign-in-menu" aria-hidden="true">
+        <div class="menu-panel">
+            <h2>Sign in</h2>
+            <p>Choose your account</p>
+            <ul class="user-list" id="user-list"></ul>
+            <button type="button" class="menu-close" id="menu-close">Cancel</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>Store</h1>
+        <p class="subtitle" id="subtitle">Shop theme</p>
+        <p id="signed-in" class="signed-in hidden">
+            Signed in as <span id="signed-in-name"></span>
+            <span class="balance-label">Balance</span>
+            <span class="balance" id="user-balance">—</span>
+        </p>
+        <button type="button" id="sign-in-btn">Sign in</button>
+        <p id="status"></p>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+    <script>
+        const USERS = ["hok yu", "miles", "rex", "caden", "franklin", "hugo", "asten", "chtim"];
+        const USER_COLUMNS = {
+            "hok yu": "hokyu",
+            miles: "miles",
+            rex: "rex",
+            caden: "caden",
+            franklin: "franklin",
+            hugo: "hugo",
+            asten: "astin",
+            chtim: "chtim"
+        };
+        const ALL_COLUMNS = Object.values(USER_COLUMNS);
+        const STORAGE_KEY = "storeSignedInUser";
+
+        const SUPABASE_URL = "https://jxfmyrgurzoztuxsbyqb.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4Zm15cmd1cnpvenR1eHNieXFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxNDQ5MTMsImV4cCI6MjA5NzcyMDkxM30.GG9Y32NNqNsfEXEah7h2xtVTIgvsJoyi6lWr1WVgvO8";
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const signInMenu = document.getElementById("sign-in-menu");
+        const signInBtn = document.getElementById("sign-in-btn");
+        const menuClose = document.getElementById("menu-close");
+        const userList = document.getElementById("user-list");
+        const signedInEl = document.getElementById("signed-in");
+        const signedInName = document.getElementById("signed-in-name");
+        const userBalance = document.getElementById("user-balance");
+
+        function openSignInMenu() {
+            signInMenu.classList.add("open");
+            signInMenu.setAttribute("aria-hidden", "false");
+        }
+
+        function closeSignInMenu() {
+            signInMenu.classList.remove("open");
+            signInMenu.setAttribute("aria-hidden", "true");
+        }
+
+        let playerData = null;
+
+        async function fetchPlayerData() {
+            if (playerData) return playerData;
+
+            const { data, error } = await db
+                .from("players")
+                .select(ALL_COLUMNS.join(", "))
+                .limit(1);
+
+            if (error) throw error;
+            if (!data || data.length === 0) {
+                throw new Error("The players table is empty or blocked by Row Level Security.");
+            }
+
+            playerData = data[0];
+            return playerData;
+        }
+
+        async function loadBalance(username) {
+            const column = USER_COLUMNS[username];
+            userBalance.textContent = "loading...";
+
+            try {
+                const data = await fetchPlayerData();
+                const value = data[column];
+
+                if (value === null || value === undefined) {
+                    throw new Error("Balance not found for " + username);
+                }
+
+                userBalance.textContent = value + "$";
+                document.getElementById("status").textContent = "";
+            } catch (error) {
+                console.error("Error fetching balance:", error.message);
+                userBalance.textContent = "failed to load";
+                document.getElementById("status").textContent = error.message;
+            }
+        }
+
+        function setSignedInUser(username) {
+            localStorage.setItem(STORAGE_KEY, username);
+            signedInName.textContent = username;
+            signedInEl.classList.remove("hidden");
+            signInBtn.textContent = "Switch account";
+            closeSignInMenu();
+            loadBalance(username);
+        }
+
+        function loadSignedInUser() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved && USERS.includes(saved)) {
+                signedInName.textContent = saved;
+                signedInEl.classList.remove("hidden");
+                signInBtn.textContent = "Switch account";
+                loadBalance(saved);
+            }
+        }
+
+        USERS.forEach((username) => {
+            const li = document.createElement("li");
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = username;
+            btn.addEventListener("click", () => setSignedInUser(username));
+            li.appendChild(btn);
+            userList.appendChild(li);
+        });
+
+        signInBtn.addEventListener("click", openSignInMenu);
+        menuClose.addEventListener("click", closeSignInMenu);
+        signInMenu.addEventListener("click", (e) => {
+            if (e.target === signInMenu) closeSignInMenu();
+        });
+
+        loadSignedInUser();
+    </script>
+    <script>
+        const NOTES = [[0.0,61,0.129,0.787],[0.3871,65,0.129,0.787],[0.3871,68,0.129,0.787],[0.3871,72,0.129,0.787],[0.0,87,0.7742,0.787],[1.1613,65,0.129,0.787],[1.1613,68,0.129,0.787],[1.1613,72,0.129,0.787],[1.1613,75,0.1935,0.787],[1.3548,80,0.1935,0.787],[1.5484,82,0.0968,0.787],[1.5484,60,0.129,0.787],[1.9355,84,0.0968,0.787],[1.9355,63,0.129,0.787],[1.9355,70,0.129,0.787],[1.9355,67,0.129,0.787],[2.3226,82,0.0968,0.787],[2.4194,84,0.0968,0.787],[2.5161,82,0.0968,0.787],[2.7097,80,0.0968,0.787],[2.7097,63,0.129,0.787],[2.7097,67,0.129,0.787],[2.7097,70,0.129,0.787],[3.0968,58,0.129,0.787],[3.4839,61,0.129,0.787],[3.4839,65,0.129,0.787],[3.4839,67,0.129,0.787],[3.0968,79,0.5806,0.787],[3.871,80,0.1935,0.787],[4.2581,67,0.129,0.787],[4.2581,65,0.129,0.787],[4.2581,61,0.129,0.787],[4.2581,82,0.1935,0.787],[4.6452,56,0.129,0.787],[5.0323,60,0.129,0.787],[5.0323,63,0.129,0.787],[5.0323,67,0.129,0.787],[5.4194,70,0.129,0.787],[5.4194,67,0.129,0.787],[4.6452,75,1.1613,0.787],[5.8065,68,0.129,0.787],[5.8065,60,0.129,0.787],[5.8065,63,0.129,0.787],[6.1936,61,0.129,0.787],[6.5806,65,0.129,0.787],[6.5806,68,0.129,0.787],[6.5806,72,0.129,0.787],[6.1936,87,0.7742,0.787],[7.3548,65,0.129,0.787],[7.3548,68,0.129,0.787],[7.3548,72,0.129,0.787],[7.3548,75,0.1935,0.787],[7.5484,80,0.1935,0.787],[7.7419,82,0.0968,0.787],[7.7419,60,0.129,0.787],[8.129,84,0.0968,0.787],[8.129,63,0.129,0.787],[8.129,70,0.129,0.787],[8.129,67,0.129,0.787],[8.5161,82,0.0968,0.787],[8.6129,84,0.0968,0.787],[8.7097,82,0.0968,0.787],[8.9032,80,0.0968,0.787],[8.9032,67,0.129,0.787],[8.9032,70,0.129,0.787],[8.9032,63,0.129,0.787],[9.2903,58,0.129,0.787],[9.6774,61,0.129,0.787],[9.6774,65,0.129,0.787],[9.6774,67,0.129,0.787],[9.2903,79,0.5806,0.787],[10.0645,80,0.1935,0.787],[10.4516,67,0.129,0.787],[10.4516,65,0.129,0.787],[10.4516,61,0.129,0.787],[10.4516,82,0.1935,0.787],[10.8387,65,0.129,0.787],[11.2258,68,0.129,0.787],[11.2258,72,0.129,0.787],[11.6129,75,0.129,0.787],[11.6129,72,0.129,0.787],[11.6129,79,0.129,0.787],[10.8387,80,1.1613,0.787],[12.0,68,0.129,0.787],[12.0,72,0.129,0.787],[12.0,77,0.129,0.787],[12.3871,61,0.129,0.787],[12.7742,65,0.129,0.787],[12.7742,68,0.129,0.787],[12.7742,72,0.129,0.787],[12.3871,87,0.7742,0.787],[13.5484,65,0.129,0.787],[13.5484,68,0.129,0.787],[13.5484,72,0.129,0.787],[13.5484,75,0.1935,0.787],[13.7419,80,0.1935,0.787],[13.9355,82,0.0968,0.787],[13.9355,60,0.129,0.787],[14.3226,84,0.0968,0.787],[14.3226,63,0.129,0.787],[14.3226,70,0.129,0.787],[14.3226,67,0.129,0.787],[14.7097,82,0.0968,0.787],[14.8065,84,0.0968,0.787],[14.9032,82,0.0968,0.787],[15.0968,80,0.0968,0.787],[15.0968,67,0.129,0.787],[15.0968,70,0.129,0.787],[15.0968,63,0.129,0.787],[15.4839,58,0.129,0.787],[15.871,61,0.129,0.787],[15.871,65,0.129,0.787],[15.871,67,0.129,0.787],[15.4839,79,0.5806,0.787],[16.2581,80,0.1935,0.787],[16.6452,67,0.129,0.787],[16.6452,65,0.129,0.787],[16.6452,61,0.129,0.787],[16.6452,82,0.1935,0.787],[17.0323,56,0.129,0.787],[17.4194,60,0.129,0.787],[17.4194,63,0.129,0.787],[17.4194,67,0.129,0.787],[17.8065,70,0.129,0.787],[17.8065,67,0.129,0.787],[17.0323,75,1.1613,0.787],[18.1936,68,0.129,0.787],[18.1936,60,0.129,0.787],[18.1936,63,0.129,0.787],[18.5807,61,0.129,0.787],[18.9678,65,0.129,0.787],[18.9678,68,0.129,0.787],[18.9678,72,0.129,0.787],[18.5807,87,0.7742,0.787],[19.7419,65,0.129,0.787],[19.7419,68,0.129,0.787],[19.7419,72,0.129,0.787],[19.7419,75,0.1935,0.787],[19.9355,80,0.1935,0.787],[20.129,82,0.0968,0.787],[20.129,60,0.129,0.787],[20.5161,84,0.0968,0.787],[20.5161,63,0.129,0.787],[20.5161,70,0.129,0.787],[20.5161,67,0.129,0.787],[20.9032,82,0.0968,0.787],[21.0,84,0.0968,0.787],[21.0968,82,0.0968,0.787],[21.2903,80,0.0968,0.787],[21.2903,67,0.129,0.787],[21.2903,70,0.129,0.787],[21.2903,63,0.129,0.787],[21.6774,58,0.129,0.787],[22.0645,61,0.129,0.787],[22.0645,65,0.129,0.787],[22.0645,67,0.129,0.787],[21.6774,79,0.5806,0.787],[22.4516,80,0.1935,0.787],[22.8387,67,0.129,0.787],[22.8387,65,0.129,0.787],[22.8387,61,0.129,0.787],[22.8387,82,0.1935,0.787],[23.2258,65,0.129,0.787],[23.6129,68,0.129,0.787],[23.6129,72,0.129,0.787],[24.0,75,0.129,0.787],[24.0,72,0.129,0.787],[24.0,79,0.129,0.787],[23.2258,80,1.1613,0.787],[24.3871,68,0.129,0.787],[24.3871,72,0.129,0.787],[24.3871,77,0.129,0.787],[24.7742,61,0.129,0.787],[24.7742,49,0.129,0.787],[25.1613,68,0.129,0.787],[25.1613,72,0.129,0.787],[25.1613,65,0.129,0.787],[25.1613,53,0.129,0.787],[25.1613,60,0.129,0.787],[25.1613,56,0.129,0.787],[25.1613,75,0.1935,0.787],[25.1613,87,0.1935,0.787],[25.5484,87,0.1935,0.787],[25.5484,75,0.1935,0.787],[25.9355,72,0.129,0.787],[25.9355,68,0.129,0.787],[25.9355,65,0.129,0.787],[25.9355,53,0.129,0.787],[25.9355,56,0.129,0.787],[25.9355,60,0.129,0.787],[25.9355,75,0.1935,0.787],[25.9355,87,0.1935,0.787],[26.3226,61,0.129,0.787],[26.3226,49,0.129,0.787],[26.3226,75,0.1935,0.795],[26.3226,87,0.1935,0.795],[26.7097,65,0.129,0.787],[26.7097,72,0.129,0.787],[26.7097,68,0.129,0.787],[26.7097,56,0.129,0.787],[26.7097,60,0.129,0.787],[26.7097,53,0.129,0.787],[26.7097,73,0.3871,0.819],[26.7097,85,0.3871,0.819],[27.4839,72,0.05,0.787],[27.0968,84,0.3871,0.843],[27.4839,65,0.05,0.787],[27.4839,68,0.05,0.787],[24.7742,77,2.7097,0.787],[27.4839,60,0.129,0.787],[27.4839,56,0.129,0.787],[27.4839,53,0.129,0.787],[27.4839,73,0.3871,0.819],[27.4839,85,0.3871,0.819],[27.871,61,0.129,0.787],[27.871,49,0.129,0.787],[28.2581,70,0.129,0.787],[28.2581,67,0.129,0.787],[28.2581,63,0.129,0.787],[28.2581,51,0.129,0.787],[28.2581,55,0.129,0.787],[28.2581,58,0.129,0.787],[27.871,75,0.7742,0.803],[27.871,87,0.7742,0.803],[29.0323,63,0.129,0.787],[29.0323,70,0.129,0.787],[29.0323,67,0.129,0.787],[29.0323,55,0.129,0.787],[29.0323,58,0.129,0.787],[29.0323,51,0.129,0.787],[28.6452,79,0.7742,0.803],[28.6452,91,0.7742,0.803],[29.4194,61,0.129,0.787],[29.4194,49,0.129,0.787],[29.8065,70,0.129,0.787],[29.8065,63,0.129,0.787],[29.8065,67,0.129,0.787],[29.8065,55,0.129,0.787],[29.8065,51,0.129,0.787],[29.8065,58,0.129,0.787],[30.5807,63,0.05,0.787],[27.871,73,2.7097,0.787],[30.5807,70,0.05,0.787],[30.5807,67,0.05,0.787],[30.5807,51,0.129,0.787],[30.5807,55,0.129,0.787],[30.5807,58,0.129,0.787],[29.4194,75,1.5484,0.795],[29.4194,87,1.5484,0.795],[30.9678,60,0.129,0.787],[30.9678,48,0.129,0.787],[31.3549,60,0.129,0.787],[31.3549,63,0.129,0.787],[31.3549,67,0.129,0.787],[31.3549,70,0.129,0.787],[31.3549,55,0.129,0.787],[31.3549,51,0.129,0.787],[31.3549,58,0.129,0.787],[31.3549,75,0.1935,0.378],[31.3549,87,0.1935,0.528],[31.742,75,0.1935,0.425],[31.742,87,0.1935,0.583],[32.1291,63,0.129,0.787],[32.1291,67,0.129,0.787],[32.1291,70,0.129,0.787],[32.1291,58,0.129,0.787],[32.1291,55,0.129,0.787],[32.1291,51,0.129,0.787],[32.1291,87,0.1935,0.63],[32.1291,75,0.1935,0.472],[32.5161,60,0.129,0.787],[32.5161,48,0.129,0.787],[32.5161,87,0.1935,0.685],[32.5161,75,0.1935,0.52],[32.9032,70,0.129,0.787],[32.9032,63,0.129,0.787],[32.9032,67,0.129,0.787],[32.9032,51,0.129,0.787],[32.9032,55,0.129,0.787],[32.9032,58,0.129,0.787],[32.9032,85,0.1935,0.709],[32.9032,73,0.1935,0.567],[33.2903,72,0.1935,0.591],[33.2903,84,0.1935,0.732],[33.6774,70,0.05,0.787],[33.6774,67,0.05,0.787],[30.9678,79,2.7097,0.787],[33.6774,63,0.05,0.787],[33.6774,58,0.129,0.787],[33.6774,55,0.129,0.787],[33.6774,51,0.129,0.787],[33.6774,73,0.1935,0.559],[33.6774,85,0.1935,0.724],[34.0645,60,0.129,0.787],[34.0645,48,0.129,0.787],[34.4516,60,0.129,0.787],[34.4516,69,0.129,0.787],[34.4516,65,0.129,0.787],[34.4516,48,0.129,0.787],[34.4516,57,0.129,0.787],[34.4516,53,0.129,0.787],[35.2258,65,0.129,0.787],[35.2258,69,0.129,0.787],[35.2258,60,0.129,0.787],[35.2258,53,0.129,0.787],[35.2258,57,0.129,0.787],[35.2258,48,0.129,0.787],[34.0645,87,1.5484,0.693],[34.0645,75,1.5484,0.449],[35.6129,60,0.129,0.787],[35.6129,48,0.129,0.787],[36.0,65,0.129,0.787],[36.0,69,0.129,0.787],[36.0,60,0.129,0.787],[36.0,53,0.129,0.787],[36.0,57,0.129,0.787],[36.0,48,0.129,0.787],[36.7742,60,0.05,0.787],[34.0645,72,2.7097,0.787],[34.0645,81,2.7097,0.787],[36.7742,77,0.05,0.906],[36.7742,69,0.05,0.787],[36.7742,65,0.05,0.787],[36.7742,57,0.129,0.787],[36.7742,48,0.129,0.787],[36.7742,53,0.129,0.787],[36.9678,82,0.1935,0.906],[37.1613,58,0.129,0.787],[37.1613,46,0.129,0.787],[37.1613,84,0.1935,0.906],[37.5484,61,0.129,0.787],[37.5484,65,0.129,0.787],[37.5484,68,0.129,0.787],[37.5484,49,0.129,0.787],[37.5484,53,0.129,0.787],[37.5484,56,0.129,0.787],[37.5484,84,0.1935,0.906],[37.9355,84,0.1935,0.906],[38.3226,68,0.129,0.787],[38.3226,65,0.129,0.787],[38.3226,61,0.129,0.787],[38.3226,56,0.129,0.787],[38.3226,53,0.129,0.787],[38.3226,49,0.129,0.787],[38.3226,84,0.1935,0.898],[38.7097,58,0.129,0.787],[38.7097,46,0.129,0.787],[38.7097,84,0.3871,0.898],[39.0968,61,0.129,0.787],[39.0968,65,0.129,0.787],[39.0968,68,0.129,0.787],[39.0968,56,0.129,0.787],[39.0968,53,0.129,0.787],[39.0968,49,0.129,0.787],[39.0968,82,0.3871,0.898],[39.4839,80,0.3871,0.89],[37.1613,73,2.7097,0.787],[39.871,61,0.05,0.787],[39.871,65,0.05,0.787],[39.871,68,0.05,0.787],[39.871,77,0.05,0.89],[39.871,49,0.129,0.787],[39.871,53,0.129,0.787],[39.871,56,0.129,0.787],[40.2581,60,0.129,0.787],[40.2581,48,0.129,0.787],[40.6452,70,0.129,0.787],[40.6452,67,0.129,0.787],[40.6452,63,0.129,0.787],[40.6452,55,0.129,0.787],[40.6452,51,0.129,0.787],[40.6452,58,0.129,0.787],[40.6452,84,0.1935,0.787],[40.6452,72,0.1935,0.583],[40.6452,79,0.1935,0.669],[40.6452,113,0.1935,0.386],[40.6452,125,0.1935,0.386],[41.0323,84,0.1935,0.787],[41.0323,72,0.1935,0.583],[41.0323,79,0.1935,0.669],[41.0323,125,0.1935,0.386],[41.0323,113,0.1935,0.386],[41.4194,63,0.129,0.787],[41.4194,67,0.129,0.787],[41.4194,70,0.129,0.787],[41.4194,58,0.129,0.787],[41.4194,55,0.129,0.787],[41.4194,51,0.129,0.787],[41.4194,84,0.1935,0.787],[41.4194,72,0.1935,0.583],[41.4194,79,0.1935,0.669],[41.4194,113,0.1935,0.386],[41.4194,125,0.1935,0.386],[41.8065,60,0.129,0.787],[41.8065,48,0.129,0.787],[41.8065,84,0.3871,0.787],[41.8065,72,0.3871,0.583],[41.8065,79,0.3871,0.669],[41.8065,113,0.3871,0.386],[41.8065,125,0.3871,0.386],[42.1936,63,0.129,0.787],[42.1936,67,0.129,0.787],[42.1936,70,0.129,0.583],[42.1936,58,0.129,0.787],[42.1936,55,0.129,0.787],[42.1936,51,0.129,0.787],[42.1936,82,0.3871,0.787],[42.1936,77,0.3871,0.669],[42.1936,111,0.3871,0.386],[42.1936,123,0.3871,0.386],[42.5807,84,0.3871,0.787],[42.5807,79,0.3871,0.669],[42.5807,72,0.3871,0.583],[42.5807,113,0.3871,0.386],[42.5807,125,0.3871,0.386],[42.9678,63,0.05,0.787],[42.9678,67,0.05,0.787],[42.9678,70,0.05,0.787],[42.9678,75,0.05,0.583],[42.9678,55,0.129,0.787],[42.9678,58,0.129,0.787],[42.9678,51,0.129,0.787],[42.9678,87,0.3871,0.787],[42.9678,82,0.3871,0.669],[42.9678,116,0.3871,0.669],[43.3549,61,0.129,0.787],[43.3549,49,0.129,0.787],[43.3549,118,0.3871,0.74],[43.742,72,0.129,0.787],[43.742,68,0.129,0.787],[43.742,65,0.129,0.787],[43.742,53,0.129,0.787],[43.742,60,0.129,0.787],[43.742,56,0.129,0.787],[44.5162,72,0.129,0.787],[44.5162,68,0.129,0.787],[44.5162,65,0.129,0.787],[44.5162,60,0.129,0.787],[44.5162,56,0.129,0.787],[44.5162,53,0.129,0.787],[43.3549,77,1.5484,0.787],[43.3549,89,1.5484,0.787],[43.3549,84,1.5484,0.669],[43.3549,80,1.5484,0.787],[44.9033,61,0.05,0.787],[44.9033,49,0.129,0.787],[45.6774,49,0.129,0.787],[45.6774,84,0.3871,0.906],[46.0645,80,0.3871,0.906],[46.4516,58,0.129,0.787],[46.4516,55,0.129,0.787],[46.8387,51,0.129,0.787],[46.8387,55,0.129,0.787],[47.2258,58,0.129,0.787],[47.2258,55,0.129,0.787],[47.6129,63,0.129,0.787],[47.6129,55,0.129,0.787],[48.0,67,0.1935,0.787],[48.0,59,0.1935,0.787],[48.0,63,0.1935,0.787],[46.4516,82,2.3226,0.906],[48.7742,65,0.1935,0.787],[48.7742,55,0.1935,0.787],[48.7742,61,0.1935,0.787]];
+        const DURATION = 48.9678;
+
+        let ctx = null;
+        let started = false;
+        let loopTimer = null;
+        const activeOsc = new Set();
+
+        function midiToFreq(n) {
+            return 440 * Math.pow(2, (n - 69) / 12);
+        }
+
+        function playNote(time, midi, duration, velocity) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "square";
+            osc.frequency.value = midiToFreq(midi);
+            const vol = Math.max(0.08, velocity * 0.35);
+            gain.gain.setValueAtTime(0.0001, time);
+            gain.gain.exponentialRampToValueAtTime(vol, time + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(time);
+            osc.stop(time + duration + 0.05);
+            activeOsc.add(osc);
+            osc.onended = () => activeOsc.delete(osc);
+        }
+
+        function scheduleLoop(startAt) {
+            for (const [t, n, d, v] of NOTES) {
+                playNote(startAt + t, n, d, v);
+            }
+            loopTimer = setTimeout(() => scheduleLoop(ctx.currentTime + 0.05), DURATION * 1000);
+        }
+
+        async function startMusic() {
+            if (started) return;
+            started = true;
+            document.getElementById("start-overlay").classList.add("hidden");
+
+            try {
+                ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (ctx.state === "suspended") await ctx.resume();
+
+                scheduleLoop(ctx.currentTime + 0.1);
+                document.getElementById("subtitle").textContent = "Shop theme playing";
+            } catch (err) {
+                document.getElementById("status").textContent = "Audio failed: " + err.message;
+                started = false;
+            }
+        }
+
+        document.getElementById("start-overlay").addEventListener("click", startMusic);
+        document.addEventListener("keydown", (e) => {
+            if (e.code === "Space" || e.code === "Enter") startMusic();
+        });
+    </script>
+</body>
+</html>
